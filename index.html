@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Union Coop</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
+  <style>
+    @font-face {
+      font-family: 'ITC Avant Garde Gothic';
+      src: url('correct-path-to-your-font/ITCAvantGardeGothic.woff2') format('woff2'),
+           url('correct-path-to-your-font/ITCAvantGardeGothic.woff') format('woff');
+      font-weight: normal;
+      font-style: normal;
+    }
+    body, #map, .leaflet-container, .leaflet-popup-content, .leaflet-control {
+      font-family: 'ITC Avant Garde Gothic', sans-serif;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #e0f7fa 30%, #ffffff);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+      animation: fadeIn 2s ease-in-out forwards;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      background-color: #e3f2fd;
+      padding: 10px 20px;
+      box-sizing: border-box;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+    }
+    .logo-container {
+      display: inline-block;
+    }
+    .logo {
+      width: 80px;
+      height: auto;
+    }
+    #nearest-store-button {
+      padding: 12px 24px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+      transition: background-color 0.4s, transform 0.4s;
+      opacity: 0;
+      transform: translateY(-50px);
+      animation: slideInFromTop 1s forwards ease-in-out 1.8s, pulseButton 2s infinite ease-in-out 2.5s;
+    }
+    #nearest-store-button:hover {
+      background-color: #0056b3;
+      transform: scale(1.15) rotate(-2deg);
+    }
+    #map {
+      flex-grow: 1;
+      width: 90%;
+      height: 80%;
+      margin: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      opacity: 0;
+      transform: scale(0.9);
+      animation: mapZoomIn 1.2s forwards ease-in-out 1.5s;
+      border: 5px solid transparent;
+      transition: border 1s ease-in-out;
+    }
+    #map:hover {
+      transform: scale(1.03);
+      border: 5px solid #007bff;
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideInFromTop {
+      from { opacity: 0; transform: translateY(-50px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes mapZoomIn {
+      from { opacity: 0; transform: scale(0.9); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    @keyframes pulseButton {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo-container">
+      <img src="https://www.unioncoop.ae/static/version1748470241/frontend/Ktpl/unioncoop/default/images/logo.svg" alt="Logo" class="logo" />
+    </div>
+    <button id="nearest-store-button" onclick="getLocation()">Visit the Nearest Store</button>
+  </div>
+  <div id="map"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const stores = [
+      {
+    "name": "UNION COOP MIRDIF",
+    "lat": 25.2373350826472,
+    "lng": 55.4213417828064,
+    "url": "https://www.google.com/maps?q=25.2373350826472,55.4213417828064"
+  },
+  {
+    "name": "UNION COOP AL BARSHA MALL",
+    "lat": 25.0992345773561,
+    "lng": 55.204657740473,
+    "url": "https://www.google.com/maps?q=25.0992345773561,55.204657740473"
+  },
+  {
+    "name": "UNION COOP JUMEIRAH 1",
+    "lat": 25.2252707866175,
+    "lng": 55.2659589828061,
+    "url": "https://www.google.com/maps?q=25.2252707866175,55.2659589828061"
+  },
+  {
+    "name": "UNION COOP AL AWEER",
+    "lat": 25.1756577091796,
+    "lng": 55.387106290338,
+    "url": "https://www.google.com/maps?q=25.1756577091796,55.387106290338"
+  },
+  {
+    "name": "UNION COOP UMM SUQEIM 2",
+    "lat": 25.1434664105189,
+    "lng": 55.2063896251345,
+    "url": "https://www.google.com/maps?q=25.1434664105189,55.2063896251345"
+  },
+  {
+    "name": "UNION COOP AL WARQAA CITY MALL",
+    "lat": 25.206655714845,
+    "lng": 55.4252906674662,
+    "url": "https://www.google.com/maps?q=25.206655714845,55.4252906674662"
+  },
+  {
+    "name": "UNION COOP BARSHA SOUTH",
+    "lat": 25.0861483971091,
+    "lng": 55.2417329539681,
+    "url": "https://www.google.com/maps?q=25.0861483971091,55.2417329539681"
+  },
+  {
+    "name": "UNION COOP AL WASL",
+    "lat": 25.2106492295137,
+    "lng": 55.2708850674662,
+    "url": "https://www.google.com/maps?q=25.2106492295137,55.2708850674662"
+  },
+  {
+    "name": "UNION COOP MOTOR CITY",
+    "lat": 25.0454391785398,
+    "lng": 55.233251482802,
+    "url": "https://www.google.com/maps?q=25.0454391785398,55.233251482802"
+  },
+  {
+    "name": "UNION COOP ALNAHDA / AL TWAR",
+    "lat": 25.2704727967356,
+    "lng": 55.3716512963025,
+    "url": "https://www.google.com/maps?q=25.2704727967356,55.3716512963025"
+  }
+   ]; // You can paste all the store objects here
+
+    const map = L.map('map').setView([25.225301197005617, 55.33698844362278], 10);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    }).addTo(map);
+
+    stores.forEach(store => {
+      L.marker([store.lat, store.lng])
+        .addTo(map)
+        .bindPopup(`
+          <b>${store.name}</b><br>
+          <a href="${store.url}" target="_blank" style="color: #007bff;">Open in Google Maps</a>
+        `);
+    });
+
+    const welcomePopup = L.popup()
+      .setLatLng([25.225301197005617, 55.33698844362278])
+      .setContent(`
+        <div style="font-size: 1.1rem; width: 220px; padding: 16px;">
+    <b>🎉 Welcome to Union Coop!</b><br><br>
+    Countless reasons to celebrate Eid with amazing new deals and store openings!<br><br>
+    📍 <b>Click "Visit the Store"</b> to find a location near you and enjoy exclusive Eid offers from <b>29 May - 08 June 2025</b>.
+  </div>
+      `)
+      .openOn(map);
+
+    function getLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(showNearestStore, handleLocationError, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        });
+      } else {
+        alert("Geolocation is not supported by this browser.");
+      }
+    }
+
+    function handleLocationError(error) {
+      alert("Error retrieving location: " + error.message);
+    }
+
+    function showNearestStore(position) {
+      const userLat = position.coords.latitude;
+      const userLng = position.coords.longitude;
+      let nearestStore = null;
+      let minDistance = Infinity;
+
+      stores.forEach(store => {
+        const distance = getDistance(userLat, userLng, store.lat, store.lng);
+        if (distance < minDistance) {
+          minDistance = distance;
+          nearestStore = store;
+        }
+      });
+
+      if (nearestStore) {
+        alert(`The nearest store is: ${nearestStore.name}`);
+        window.open(nearestStore.url, "_blank");
+      }
+    }
+
+    function getDistance(lat1, lng1, lat2, lng2) {
+      const R = 6371;
+      const dLat = deg2rad(lat2 - lat1);
+      const dLng = deg2rad(lng2 - lng1);
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+        Math.sin(dLng / 2) * Math.sin(dLng / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+
+    function deg2rad(deg) {
+      return deg * (Math.PI / 180);
+    }
+  </script>
+</body>
+</html>
